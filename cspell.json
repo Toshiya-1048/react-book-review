@@ -1,0 +1,15 @@
+{
+    "version": "0.2",
+    "words": [
+      "signin",
+      "tailwindcss",
+      "@tailwind",
+      "reduxjs",
+      "compressorjs",
+      "signup"
+    ],
+    "ignorePaths": [
+      "**/node_modules/**",
+      "**/dist/**"
+    ]
+  }
