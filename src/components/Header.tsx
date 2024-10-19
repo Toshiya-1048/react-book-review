@@ -1,20 +1,12 @@
 // ヘッダーコンポーネント
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
+  const { isLoggedIn, userName, iconUrl, logout } = useContext(AuthContext);
 
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      setIsLoggedIn(true);
-      // ユーザー名を取得するAPIを呼び出すか、トークンからデコードする
-      // ここでは仮にユーザー名を設定
-      setUserName('ユーザー名'); // 実際のユーザー名を設定するロジックを追加してください
-    }
-  }, []);
+  console.log('ユーザー名:', userName); // ここでユーザー名を確認
 
   return (
     <header className="bg-gray-800 p-4 text-white w-full">
@@ -22,15 +14,15 @@ function Header() {
         <div className="text-xl font-bold">
           <Link to="/">書籍レビューサイト</Link>
         </div>
-        <div>
+        <div className="flex items-center">
           {isLoggedIn ? (
             <>
+              {iconUrl && (
+                <img src={iconUrl} alt="ユーザーアイコン" className="w-8 h-8 rounded-full mr-2" />
+              )}
               <span className="mr-4">{userName}</span>
               <Link to="/profile" className="mr-4">プロフィール</Link>
-              <button onClick={() => {
-                localStorage.removeItem('authToken');
-                setIsLoggedIn(false);
-              }}>サインアウト</button>
+              <button onClick={logout}>サインアウト</button>
             </>
           ) : (
             <Link to="/login">ログイン</Link>

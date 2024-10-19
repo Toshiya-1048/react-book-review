@@ -1,14 +1,21 @@
 // ログイン画面コンポーネント
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { AuthContext } from '../context/AuthContext';
+
+interface LoginFormData {
+  email: string;
+  password: string;
+}
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm<{ email: string; password: string }>();
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
   const [error, setError] = useState('');
+  const { login } = useContext(AuthContext); // AuthContextからlogin関数を取得
 
-  const onSubmit = async (data: { email: string; password: string }) => {
+  const onSubmit = async (data: LoginFormData) => {
     setError(''); // エラーメッセージをリセット
 
     const signinData = {
@@ -32,8 +39,26 @@ const Login: React.FC = () => {
       if (response.ok) {
         const responseData: { token: string } = await response.json();
         console.log('レスポンスデータ:', responseData); // レスポンスデータをコンソールに出力
-        localStorage.setItem('authToken', responseData.token);
-        navigate('/reviews');
+
+        // ユーザー名を取得するAPIを呼び出す
+        const userResponse = await fetch('https://railway.bookreview.techtrain.dev/users', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${responseData.token}`,
+          },
+        });
+
+        if (userResponse.ok) {
+          const userData: { name: string; iconUrl?: string } = await userResponse.json();
+          console.log('ユーザーデータ:', userData);
+          login(responseData.token, userData.name, userData.iconUrl || '');
+          navigate('/reviews');
+        } else {
+          const errorData = await userResponse.json();
+          setError(errorData.ErrorMessageJP || 'ユーザー情報の取得に失敗しました');
+          console.error('ユーザー情報取得エラー:', errorData);
+        }
       } else {
         const errorData = await response.json();
         switch (response.status) {

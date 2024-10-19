@@ -1,70 +1,95 @@
 // ユーザー登録画面コンポーネント
-import { useState, useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import Compressor from 'compressorjs';
 
-function SignUp() {
-  const { register, handleSubmit, formState: { errors } } = useForm<{ name: string; email: string; password: string; icon: FileList }>();
+interface SignUpFormData {
+  name: string;
+  email: string;
+  password: string;
+  icon: FileList;
+}
+
+const SignUp: React.FC = () => {
+  const { register, handleSubmit, formState: { errors } } = useForm<SignUpFormData>();
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
   const [error, setError] = useState('');
 
-  const onSubmit = async (data: { name: string; email: string; password: string; icon: FileList }) => {
-    console.log('フォームデータ:', data); // フォームデータをコンソールに出力
-
+  const onSubmit = async (data: SignUpFormData) => {
+    console.log('フォームデータ:', data);
     const { name, email, password } = data;
+    const iconFile = data.icon[0];
 
-    // アイコン画像のリサイズ
-    new Compressor(data.icon[0], {
-      quality: 0.6,
-      success: async (compressedResult) => {
-        // 画像をBase64に変換する
-        const reader = new FileReader();
-        reader.readAsDataURL(compressedResult);
-        reader.onloadend = async () => {
-          const base64data = reader.result;
+    try {
+      // ユーザー登録
+      const userResponse = await fetch('https://railway.bookreview.techtrain.dev/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-          const requestBody = {
-            name,
-            email,
-            password,
-            icon: base64data, // Base64エンコードされた画像データ
-          };
+      console.log('ユーザー登録レスポンスステータス:', userResponse.status);
 
-          try {
-            const response = await fetch('https://railway.bookreview.techtrain.dev/users', {
+      if (userResponse.ok) {
+        const userData: { token: string } = await userResponse.json();
+        console.log('ユーザー登録レスポンスデータ:', userData);
+
+        // アイコンの圧縮
+        new Compressor(iconFile, {
+          quality: 0.6, // 圧縮品質を設定（0から1の範囲）
+          success: async (compressedResult) => {
+            // アイコンアップロード
+            const formData = new FormData();
+            formData.append('icon', compressedResult);
+
+            const iconResponse = await fetch('https://railway.bookreview.techtrain.dev/uploads', {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userData.token}`,
               },
-              body: JSON.stringify(requestBody),
+              body: formData,
             });
 
-            if (response.ok) {
-              const responseData: { token: string } = await response.json();
-              localStorage.setItem('authToken', responseData.token);
-              alert('サインアップに成功しました！'); // 成功メッセージを表示
-              navigate('/reviews'); // 書籍レビューの一覧画面に遷移
+            console.log('アイコンアップロードレスポンスステータス:', iconResponse.status);
+
+            if (iconResponse.ok) {
+              const iconData: { iconUrl: string } = await iconResponse.json();
+              console.log('アイコンアップロードレスポンスデータ:', iconData);
+
+              login(userData.token, name, iconData.iconUrl);
+              alert('サインアップに成功しました！');
+              navigate('/reviews');
             } else {
-              const errorData = await response.json();
-              console.error('サーバーエラー:', errorData); // サーバーエラーメッセージをコンソールに出力
-              setError(errorData.ErrorMessageJP || '登録に失敗しました');
+              const errorData = await iconResponse.json();
+              setError(errorData.ErrorMessageJP || 'アイコンのアップロードに失敗しました');
+              console.error('アイコンアップロードエラー:', errorData);
             }
-          } catch  {
-            setError('ネットワークエラーが発生しました');
-          }
-        };
-      },
-      error() {
-        setError('画像の圧縮に失敗しました');
-      },
-    });
+          },
+          error(err) {
+            console.error('圧縮エラー:', err.message);
+            setError('アイコンの圧縮に失敗しました');
+          },
+        });
+      } else {
+        const errorData = await userResponse.json();
+        setError(errorData.ErrorMessageJP || '登録に失敗しました');
+        console.error('サインアップエラー:', errorData);
+      }
+    } catch (error) {
+      console.error('ネットワークエラー:', error);
+      setError('ネットワークエラーが発生しました');
+    }
   };
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
-      navigate('/reviews'); // ログイン済みならリダイレクト
+      navigate('/reviews');
     }
   }, [navigate]);
 
@@ -87,18 +112,11 @@ function SignUp() {
           <input
             type="email"
             className="border w-full p-2"
-            // 以下React Hook Formによるバリデーション
             {...register('email', {
               required: 'メールアドレスは必須です',
               pattern: {
                 value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                // メールアドレスの@が、英数字、ピリオド、アンダースコア、パーセント、プラス、ハイフンを含むことを許可。
-                // @の後のドメイン名は、英数字、ピリオド、ハイフンを含むことを許可
-                // ドットに続いて2文字以上のアルファベットが必須
-                // 言い換えるなら日本語は許可されていないのでエラー判定される
-
                 message: '有効なメールアドレスを入力してください'
-                // エラー時のUIにあたるメッセージ
               }
             })}
           />
@@ -124,16 +142,17 @@ function SignUp() {
           {errors.password && <p className="text-red-500">{errors.password.message}</p>}
         </div>
         <div>
-          <label>アイコン画像</label>
+          <label>アイコン</label>
           <input
             type="file"
             className="border w-full p-2"
-            {...register('icon', { required: 'アイコン画像は必須です' })}
+            accept="image/*"
+            {...register('icon', { required: 'アイコンを選択してください' })}
           />
           {errors.icon && <p className="text-red-500">{errors.icon.message}</p>}
         </div>
         <button type="submit" className="bg-blue-500 text-white py-2 px-4">
-          登録
+          サインアップ
         </button>
       </form>
       <p className="mt-4">
@@ -141,6 +160,6 @@ function SignUp() {
       </p>
     </div>
   );
-}
+};
 
 export default SignUp;
