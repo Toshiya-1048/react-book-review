@@ -9,11 +9,11 @@ import { ReviewType } from '../types';
 function ReviewList() {
   const dispatch = useDispatch<AppDispatch>();
   const { reviews, currentPage, hasNextPage, loading, error } = useSelector((state: RootState) => state.reviews as {
-    reviews: ReviewType[];
-    currentPage: number;
-    hasNextPage: boolean;
-    loading: boolean;
-    error: string | null;
+    reviews: ReviewType[]; //レビューリスト本体
+    currentPage: number; //ページ番号
+    hasNextPage: boolean; //最終ページか否か
+    loading: boolean; //ローディング中か否か
+    error: string | null; //エラー内容
   });
 
   useEffect(() => {
@@ -22,7 +22,7 @@ function ReviewList() {
 
 
   return (
-    <div className="flex justify-center p-4">
+    <div className="flex justify-center p-4 ">
       <div className="w-full max-w-screen-lg mx-auto">
         <h1 className="text-2xl font-bold mb-4 text-center">書籍レビュー一覧</h1>
         {loading && <p className="text-center">読み込み中...</p>}
@@ -41,9 +41,6 @@ function ReviewList() {
                   </Link>
                   <Link to={`/reviews/${review.id}/edit`} className="text-blue-500">
                     編集
-                  </Link>
-                  <Link to="/reviews/new" className="text-blue-500">
-                    新規作成
                   </Link>
                 </div>
               </div>

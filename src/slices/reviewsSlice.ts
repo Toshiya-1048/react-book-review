@@ -44,8 +44,8 @@ export const fetchReviews = createAsyncThunk(
       const hasNextPage = data.length === PAGE_SIZE;
 
       return {
-        reviews: data,
-        hasNextPage,
+        reviews: data, // APIから返されたレビューデータ
+        hasNextPage, // 次のページが存在するかどうか
       };
     } catch  {
       return rejectWithValue('ネットワークエラー');
@@ -59,13 +59,6 @@ const reviewsSlice = createSlice({
   reducers: {
     setCurrentPage(state, action: PayloadAction<number>) {
       state.currentPage = action.payload;
-    },
-    resetReviews(state) {
-      state.reviews = [];
-      state.currentPage = 1;
-      state.hasNextPage = false;
-      state.loading = false;
-      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -89,5 +82,5 @@ const reviewsSlice = createSlice({
   },
 });
 
-export const { setCurrentPage, resetReviews } = reviewsSlice.actions;
+export const { setCurrentPage } = reviewsSlice.actions;
 export default reviewsSlice.reducer;

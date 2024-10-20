@@ -1,12 +1,19 @@
 // ヘッダーコンポーネント
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 function Header() {
+  const navigate = useNavigate(); // useNavigateフックを使用
   const { isLoggedIn, userName, iconUrl, logout } = useContext(AuthContext);
 
   console.log('ユーザー名:', userName); // ここでユーザー名を確認
+
+  // station08
+  const handleLogout = () => {
+    logout();
+    navigate('/login'); // ログアウト後にログインページにリダイレクト
+  };
 
   return (
     <header className="bg-gray-800 p-4 text-white w-full">
@@ -22,7 +29,7 @@ function Header() {
               )}
               <span className="mr-4">{userName}</span>
               <Link to="/profile" className="mr-4">プロフィール</Link>
-              <button onClick={logout}>サインアウト</button>
+              <button className='text-blue-500' onClick={handleLogout}>サインアウト</button>
             </>
           ) : (
             <Link to="/login">ログイン</Link>

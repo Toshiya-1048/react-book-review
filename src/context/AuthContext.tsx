@@ -4,7 +4,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   userName: string;
   iconUrl: string;
-  login: (token: string, name: string, icon: string) => void; // 3つの引数を受け取るように修正
+  login: (token: string, name: string, icon: string) => void;
   logout: () => void;
   updateUserName: (name: string, icon: string) => void;
 }
@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userName, setUserName] = useState<string>('');
   const [iconUrl, setIconUrl] = useState<string>('');
 
+  // 初ログイン時はnull 過去にログインしたことがある場合はログイン状態を維持
   useEffect(() => {
     const storedUserName = localStorage.getItem('userName');
     const storedIconUrl = localStorage.getItem('iconUrl');
@@ -39,16 +40,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Station03
   const login = (token: string, name: string, icon: string) => {
     console.log('ログイン時の引数:', { token, name, icon });
     setIsLoggedIn(true);
     setUserName(name);
     setIconUrl(icon);
+    // localStorageに保存
     localStorage.setItem('authToken', token);
     localStorage.setItem('userName', name);
     localStorage.setItem('iconUrl', icon);
   };
 
+  // Station08
   const logout = () => {
     setIsLoggedIn(false);
     setUserName('');
@@ -58,6 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('iconUrl');
   };
 
+  // Station07
   const updateUserName = (name: string, icon: string) => {
     setUserName(name);
     setIconUrl(icon);
