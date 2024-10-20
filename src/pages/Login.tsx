@@ -10,10 +10,10 @@ interface LoginFormData {
 }
 
 const Login: React.FC = () => {
-  const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
-  const [error, setError] = useState('');
+  const navigate = useNavigate();
   const { login } = useContext(AuthContext); // AuthContextからlogin関数を取得
+  const [error, setError] = useState('');
 
   const onSubmit = async (data: LoginFormData) => {
     setError(''); // エラーメッセージをリセット
@@ -52,7 +52,11 @@ const Login: React.FC = () => {
         if (userResponse.ok) {
           const userData: { name: string; iconUrl?: string } = await userResponse.json();
           console.log('ユーザーデータ:', userData);
+
+          // AuthContextのlogin関数を呼び出す
           login(responseData.token, userData.name, userData.iconUrl || '');
+
+          // レビュー一覧にリダイレクト
           navigate('/reviews');
         } else {
           const errorData = await userResponse.json();
@@ -85,6 +89,7 @@ const Login: React.FC = () => {
     }
   };
 
+  // リダイレクト(Station06)
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -98,8 +103,9 @@ const Login: React.FC = () => {
       {error && <p className="text-red-500">{error}</p>}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label>メールアドレス</label>
+          <label htmlFor="email">メールアドレス</label>
           <input
+            id="email"
             type="email"
             className="border w-full p-2"
             {...register('email', { 
@@ -109,12 +115,14 @@ const Login: React.FC = () => {
                 message: '有効なメールアドレスを入力してください'
               }
             })}
+            autoComplete="email"
           />
           {errors.email && <p className="text-red-500">{errors.email.message}</p>}
         </div>
         <div>
-          <label>パスワード</label>
+          <label htmlFor="password">パスワード</label>
           <input
+            id="password"
             type="password"
             className="border w-full p-2"
             {...register('password', { 
@@ -128,6 +136,7 @@ const Login: React.FC = () => {
                 message: 'パスワードは英数字、ピリオド、アンダースコア、パーセント、プラス、ハイフンのみ使用可能です'
               }
             })}
+            autoComplete="current-password"
           />
           {errors.password && <p className="text-red-500">{errors.password.message}</p>}
         </div>

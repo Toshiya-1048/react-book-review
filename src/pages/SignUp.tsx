@@ -18,6 +18,24 @@ const SignUp: React.FC = () => {
   const { login } = useContext(AuthContext);
   const [error, setError] = useState('');
 
+  const validateImageFile = (fileList: FileList) => {
+    const file = fileList[0];
+    if (!file) return 'アイコンを選択してください';
+
+    // ファイルサイズの制限（1MB以下）
+    if (file.size > 1024 * 1024) {
+      return 'アイコンのファイルサイズは1MB以下である必要があります';
+    }
+
+    // 拡張子のチェック
+    const validExtensions = ['image/jpeg', 'image/png'];
+    if (!validExtensions.includes(file.type)) {
+      return '許可されているファイル形式はjpgまたはpngのみです';
+    }
+
+    return true; // バリデーション成功
+  };
+
   const onSubmit = async (data: SignUpFormData) => {
     console.log('フォームデータ:', data);
     const { name, email, password } = data;
@@ -59,9 +77,11 @@ const SignUp: React.FC = () => {
 
             if (iconResponse.ok) {
               const iconData: { iconUrl: string } = await iconResponse.json();
-              console.log('アイコンアップロードレスポンスデータ:', iconData);
+                console.log('アイコンアップロードレスポンスデータ:', iconData);
 
+              // AuthContextのlogin関数を呼び出す 
               login(userData.token, name, iconData.iconUrl);
+
               alert('サインアップに成功しました！');
               navigate('/reviews');
             } else {
@@ -86,6 +106,7 @@ const SignUp: React.FC = () => {
     }
   };
 
+  // リダイレクト(Station06)
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -99,17 +120,20 @@ const SignUp: React.FC = () => {
       {error && <p className="text-red-500">{error}</p>}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label>名前</label>
+          <label htmlFor="name">名前</label>
           <input
+            id="name"
             type="text"
             className="border w-full p-2"
             {...register('name', { required: '名前は必須です' })}
+            autoComplete="name" // 自動入力属性を追加
           />
           {errors.name && <p className="text-red-500">{errors.name.message}</p>}
         </div>
         <div>
-          <label>メールアドレス</label>
+          <label htmlFor="email">メールアドレス</label>
           <input
+            id="email"
             type="email"
             className="border w-full p-2"
             {...register('email', {
@@ -119,12 +143,14 @@ const SignUp: React.FC = () => {
                 message: '有効なメールアドレスを入力してください'
               }
             })}
+            autoComplete="email" // 自動入力属性を追加
           />
           {errors.email && <p className="text-red-500">{errors.email.message}</p>}
         </div>
         <div>
-          <label>パスワード</label>
+          <label htmlFor="password">パスワード</label>
           <input
+            id="password"
             type="password"
             className="border w-full p-2"
             {...register('password', { 
@@ -138,16 +164,18 @@ const SignUp: React.FC = () => {
                 message: 'パスワードは英数字、ピリオド、アンダースコア、パーセント、プラス、ハイフンのみ使用可能です'
               }
             })}
+            autoComplete="new-password" // 自動入力属性を追加
           />
           {errors.password && <p className="text-red-500">{errors.password.message}</p>}
         </div>
         <div>
-          <label>アイコン</label>
+          <label htmlFor="icon">アイコン</label>
           <input
+            id="icon"
             type="file"
             className="border w-full p-2"
             accept="image/*"
-            {...register('icon', { required: 'アイコンを選択してください' })}
+            {...register('icon', { validate: validateImageFile })}
           />
           {errors.icon && <p className="text-red-500">{errors.icon.message}</p>}
         </div>

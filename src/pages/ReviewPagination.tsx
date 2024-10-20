@@ -31,14 +31,14 @@ function ReviewPagination({ currentPage, hasNextPage }: ReviewPaginationProps) {
       <button
         onClick={handleFirstPage}
         disabled={currentPage === 1}
-        className="bg-gray-300 px-4 py-2 mx-2 disabled:opacity-50"
+        className="bg-gray-700 px-4 py-2 mx-2 disabled:opacity-50"
       >
         1ページ目
       </button>
       <button
         onClick={handlePrev}
         disabled={currentPage === 1}
-        className="bg-gray-300 px-4 py-2 mx-2 disabled:opacity-50"
+        className="bg-gray-700 px-4 py-2 mx-2 disabled:opacity-50"
       >
         前へ
       </button>
@@ -46,7 +46,7 @@ function ReviewPagination({ currentPage, hasNextPage }: ReviewPaginationProps) {
       <button
         onClick={handleNext}
         disabled={!hasNextPage}
-        className="bg-gray-300 px-4 py-2 mx-2 disabled:opacity-50"
+        className="bg-gray-700 px-4 py-2 mx-2 disabled:opacity-50"
       >
         次へ
       </button>

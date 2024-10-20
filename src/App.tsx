@@ -11,7 +11,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="flex flex-col min-h-screen"> {/* flex-colを追加して縦に並べる */}
+        <div className="flex flex-col min-h-screen">
           <Header /> {/* Headerコンポーネントを追加 */}
           <div className="flex-grow"> {/* 余白がある場合コンテンツを縦に広げる */}
             <Routes>
