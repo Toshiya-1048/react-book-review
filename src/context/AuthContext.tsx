@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Station03
   const login = (token: string, name: string, icon: string) => {
-    console.log('ログイン時の引数:', { token, name, icon });
+    // console.log('ログイン時の引数:', { token, name, icon });
     setIsLoggedIn(true);
     setUserName(name);
     setIconUrl(icon);

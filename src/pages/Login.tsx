@@ -23,7 +23,7 @@ const Login: React.FC = () => {
       password: data.password,
     };
 
-    console.log('送信データ:', signinData); // 送信データをコンソールに出力
+    // console.log('送信データ:', signinData); // 送信データをコンソールに出力
 
     try {
       const response = await fetch('https://railway.bookreview.techtrain.dev/signin', {
@@ -34,11 +34,11 @@ const Login: React.FC = () => {
         body: JSON.stringify(signinData),
       });
 
-      console.log('レスポンスステータス:', response.status); // レスポンスステータスをコンソールに出力
+      // console.log('レスポンスステータス:', response.status); // レスポンスステータスをコンソールに出力
 
       if (response.ok) {
         const responseData: { token: string } = await response.json();
-        console.log('レスポンスデータ:', responseData); // レスポンスデータをコンソールに出力
+        // console.log('レスポンスデータ:', responseData); // レスポンスデータをコンソールに出力
 
         // ユーザー名を取得するAPIを呼び出す
         const userResponse = await fetch('https://railway.bookreview.techtrain.dev/users', {
@@ -50,8 +50,8 @@ const Login: React.FC = () => {
         });
 
         if (userResponse.ok) {
-          const userData: { name: string; iconUrl?: string } = await userResponse.json();
-          console.log('ユーザーデータ:', userData);
+          const userData: { name: string; iconUrl: string } = await userResponse.json();
+          // console.log('ユーザーデータ:', userData);
 
           // AuthContextのlogin関数を呼び出す
           login(responseData.token, userData.name, userData.iconUrl || '');

@@ -37,7 +37,7 @@ const SignUp: React.FC = () => {
   };
 
   const onSubmit = async (data: SignUpFormData) => {
-    console.log('フォームデータ:', data);
+    // console.log('フォームデータ:', data);
     const { name, email, password } = data;
     const iconFile = data.icon[0];
 
@@ -51,11 +51,11 @@ const SignUp: React.FC = () => {
         body: JSON.stringify({ name, email, password }),
       });
 
-      console.log('ユーザー登録レスポンスステータス:', userResponse.status);
+      // console.log('ユーザー登録レスポンスステータス:', userResponse.status);
 
       if (userResponse.ok) {
         const userData: { token: string } = await userResponse.json();
-        console.log('ユーザー登録レスポンスデータ:', userData);
+        // console.log('ユーザー登録レスポンスデータ:', userData);
 
         // アイコンの圧縮
         new Compressor(iconFile, {
@@ -73,11 +73,11 @@ const SignUp: React.FC = () => {
               body: formData,
             });
 
-            console.log('アイコンアップロードレスポンスステータス:', iconResponse.status);
+            // console.log('アイコンアップロードレスポンスステータス:', iconResponse.status);
 
             if (iconResponse.ok) {
               const iconData: { iconUrl: string } = await iconResponse.json();
-                console.log('アイコンアップロードレスポンスデータ:', iconData);
+                // console.log('アイコンアップロードレスポンスデータ:', iconData);
 
               // AuthContextのlogin関数を呼び出す 
               login(userData.token, name, iconData.iconUrl);

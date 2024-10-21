@@ -1,15 +1,9 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-
-interface Review {
-  id: string;
-  title: string;
-  review: string;
-  reviewer: string;
-  isMine: boolean;
-}
+import { RootState } from '../store';
+import { ReviewType } from '../types';
 
 interface ReviewsState {
-  reviews: Review[];
+  reviews: ReviewType[];
   currentPage: number;
   hasNextPage: boolean;
   loading: boolean;
@@ -24,31 +18,42 @@ const initialState: ReviewsState = {
   error: null,
 };
 
-// 10件を1ページとする
-const PAGE_SIZE = 10;
-
-// 正しいAPIエンドポイントを使用し、レスポンスが配列であることを考慮
-export const fetchReviews = createAsyncThunk(
+// 引数にページ番号とログイン状態を受け取る
+export const fetchReviews = createAsyncThunk<
+  { reviews: ReviewType[]; hasNextPage: boolean },
+  { page: number; isLoggedIn: boolean },
+  {
+    state: RootState;
+    rejectValue: string;
+  }
+>(
   'reviews/fetchReviews',
-  async (currentPage: number, { rejectWithValue }) => {
+  async ({ page, isLoggedIn }: { page: number; isLoggedIn: boolean }, thunkAPI) => {
+    const offset = (page - 1) * 10;
+    const endpoint = isLoggedIn 
+      ? `https://railway.bookreview.techtrain.dev/books?offset=${offset}`
+      : `https://railway.bookreview.techtrain.dev/public/books?offset=${offset}`;
+    
+    const headers: HeadersInit = isLoggedIn
+      ? { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+      : {};
+
     try {
-      const offset = (currentPage - 1) * PAGE_SIZE;
-      const response = await fetch(`https://railway.bookreview.techtrain.dev/public/books?offset=${offset}`);
-      if (!response.ok) {
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers,
+      });
+
+      if (response.ok) {
+        const data: ReviewType[] = await response.json();
+        const hasNextPage = data.length === 10;
+        return { reviews: data, hasNextPage };
+      } else {
         const errorData = await response.json();
-        return rejectWithValue(errorData.ErrorMessageJP || 'エラーが発生しました');
+        return thunkAPI.rejectWithValue(errorData.ErrorMessageJP || 'レビューの取得に失敗しました');
       }
-      const data: Review[] = await response.json();
-
-      // 次のページが存在するかを判断
-      const hasNextPage = data.length === PAGE_SIZE;
-
-      return {
-        reviews: data, // APIから返されたレビューデータ
-        hasNextPage, // 次のページが存在するかどうか
-      };
-    } catch  {
-      return rejectWithValue('ネットワークエラー');
+    } catch {
+      return thunkAPI.rejectWithValue('ネットワークエラーが発生しました');
     }
   }
 );
@@ -67,14 +72,11 @@ const reviewsSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        fetchReviews.fulfilled,
-        (state, action: PayloadAction<{ reviews: Review[]; hasNextPage: boolean }>) => {
-          state.loading = false;
-          state.reviews = action.payload.reviews;
-          state.hasNextPage = action.payload.hasNextPage;
-        }
-      )
+      .addCase(fetchReviews.fulfilled, (state, action: PayloadAction<{ reviews: ReviewType[]; hasNextPage: boolean }>) => {
+        state.loading = false;
+        state.reviews = action.payload.reviews;
+        state.hasNextPage = action.payload.hasNextPage;
+      })
       .addCase(fetchReviews.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
