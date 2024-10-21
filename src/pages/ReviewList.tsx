@@ -5,44 +5,47 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { fetchReviews } from '../slices/reviewsSlice';
 import { ReviewType } from '../types';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 function ReviewList() {
   const dispatch = useDispatch<AppDispatch>();
+  const { isLoggedIn } = useContext(AuthContext);
   const { reviews, currentPage, hasNextPage, loading, error } = useSelector((state: RootState) => state.reviews as {
-    reviews: ReviewType[]; //レビューリスト本体
-    currentPage: number; //ページ番号
-    hasNextPage: boolean; //最終ページか否か
-    loading: boolean; //ローディング中か否か
-    error: string | null; //エラー内容
+    reviews: ReviewType[];
+    currentPage: number;
+    hasNextPage: boolean;
+    loading: boolean;
+    error: string | null;
   });
   const navigate = useNavigate();
 
   useEffect(() => {
-    dispatch(fetchReviews(currentPage));
-  }, [dispatch, currentPage]);
+    dispatch(fetchReviews({ page: currentPage, isLoggedIn }));
+  }, [dispatch, currentPage, isLoggedIn]);
 
   const handleReviewClick = async (reviewId: string) => {
     const token = localStorage.getItem('authToken');
-    if (!token) {
-      navigate('/login');
-      return;
+    if (token) {
+      try {
+        await fetch('https://railway.bookreview.techtrain.dev/logs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ selectBookId: reviewId }),
+        });
+        console.log('selected book id:', reviewId);
+      } catch (err) {
+        console.error('ログ送信エラー:', err);
+      }
+    } else {
+      // 未認証の場合はログ送信をスキップ
+      console.log('未認証ユーザーによるレビュー詳細閲覧: ', reviewId);
     }
 
-    try {
-      await fetch('https://railway.bookreview.techtrain.dev/logs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ selectBookId: reviewId }),
-      });
-      console.log('selected book id:', reviewId);
-    } catch (err) {
-      console.error('ログ送信エラー:', err);
-    }
-
-    navigate(`/detail/${reviewId}`);
+    navigate(`/detail/${reviewId}`); // 常に詳細ページへ遷移
   };
 
   return (

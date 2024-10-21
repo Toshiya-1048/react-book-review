@@ -18,59 +18,42 @@ const initialState: ReviewsState = {
   error: null,
 };
 
-// 10件を1ページとする
-const PAGE_SIZE = 10;
-
-// `fetchReviews` 関数を修正
+// 引数にページ番号とログイン状態を受け取る
 export const fetchReviews = createAsyncThunk<
   { reviews: ReviewType[]; hasNextPage: boolean },
-  number,
+  { page: number; isLoggedIn: boolean },
   {
     state: RootState;
     rejectValue: string;
   }
 >(
   'reviews/fetchReviews',
-  async (currentPage: number, { rejectWithValue }) => {
+  async ({ page, isLoggedIn }: { page: number; isLoggedIn: boolean }, thunkAPI) => {
+    const offset = (page - 1) * 10;
+    const endpoint = isLoggedIn 
+      ? `https://railway.bookreview.techtrain.dev/books?offset=${offset}`
+      : `https://railway.bookreview.techtrain.dev/public/books?offset=${offset}`;
+    
+    const headers: HeadersInit = isLoggedIn
+      ? { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+      : {};
+
     try {
-      const offset = (currentPage - 1) * PAGE_SIZE;
-      const response = await fetch(`https://railway.bookreview.techtrain.dev/public/books?offset=${offset}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
-        },
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers,
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        const data: ReviewType[] = await response.json();
+        const hasNextPage = data.length === 10;
+        return { reviews: data, hasNextPage };
+      } else {
         const errorData = await response.json();
-        return rejectWithValue(errorData.ErrorMessageJP || 'エラーが発生しました');
+        return thunkAPI.rejectWithValue(errorData.ErrorMessageJP || 'レビューの取得に失敗しました');
       }
-
-      const data: ReviewType[] = await response.json(); 
-
-      // ログインユーザーの情報を取得
-      const userName = localStorage.getItem('userName') || '';
-
-      // `isMine` プロパティを追加
-      const reviews: ReviewType[] = data.map((review) => ({
-        id: review.id,
-        title: review.title,
-        review: review.review,
-        reviewer: review.reviewer,
-        isMine: review.reviewer === userName, // `reviewer` が現在のユーザーと一致するか
-      }));
-
-      // reviewsの内容をコンソールに表示
-      // console.log('Reviews:', reviews);
-
-      // 次のページが存在するかを判断
-      const hasNextPage = data.length === PAGE_SIZE;
-
-      return {
-        reviews,
-        hasNextPage,
-      };
     } catch {
-      return rejectWithValue('ネットワークエラー');
+      return thunkAPI.rejectWithValue('ネットワークエラーが発生しました');
     }
   }
 );
@@ -89,14 +72,11 @@ const reviewsSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        fetchReviews.fulfilled,
-        (state, action: PayloadAction<{ reviews: ReviewType[]; hasNextPage: boolean }>) => {
-          state.loading = false;
-          state.reviews = action.payload.reviews;
-          state.hasNextPage = action.payload.hasNextPage;
-        }
-      )
+      .addCase(fetchReviews.fulfilled, (state, action: PayloadAction<{ reviews: ReviewType[]; hasNextPage: boolean }>) => {
+        state.loading = false;
+        state.reviews = action.payload.reviews;
+        state.hasNextPage = action.payload.hasNextPage;
+      })
       .addCase(fetchReviews.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;

@@ -7,8 +7,9 @@ import ReviewList from './pages/ReviewList'; // ReviewListコンポーネント�
 import ReviewNew from './pages/ReviewNew';
 import ReviewEdit from './pages/ReviewEdit'; // ReviewEditコンポーネントをインポート
 import Profile from './pages/Profile'; // Profileコンポーネントをインポート
-import { AuthProvider } from './context/AuthContext';
 import ReviewDetail from './pages/ReviewDetail'; // ReviewDetailコンポーネントをインポート
+import NotFound from './pages/NotFound'; // NotFoundコンポーネントをインポート
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
               <Route path="/new" element={<ReviewNew />} /> {/* ReviewNewコンポーネントのルートを追加 */}
               <Route path="/profile" element={<Profile />} /> {/* Profileコンポーネントのルートを追加 */}
               <Route path="/detail/:id" element={<ReviewDetail />} /> {/* 新しいルートを追加 */}
+              <Route path="*" element={<NotFound />} /> {/* 404ページを追加 */}
             </Routes>
           </div>
         </div>
