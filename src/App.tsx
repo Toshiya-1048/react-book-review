@@ -4,8 +4,11 @@ import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import Header from './components/Header'; // Headerコンポーネントをインポート
 import ReviewList from './pages/ReviewList'; // ReviewListコンポーネントをインポート
+import ReviewNew from './pages/ReviewNew';
+import ReviewEdit from './pages/ReviewEdit'; // ReviewEditコンポーネントをインポート
 import Profile from './pages/Profile'; // Profileコンポーネントをインポート
 import { AuthProvider } from './context/AuthContext';
+import ReviewDetail from './pages/ReviewDetail'; // ReviewDetailコンポーネントをインポート
 
 function App() {
   return (
@@ -19,7 +22,10 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/reviews" element={<ReviewList />} /> {/* ReviewListコンポーネントを追加 */}
+              <Route path="/edit/:id" element={<ReviewEdit />} /> {/* URLを/edit/:idに変更 */}
+              <Route path="/new" element={<ReviewNew />} /> {/* ReviewNewコンポーネントのルートを追加 */}
               <Route path="/profile" element={<Profile />} /> {/* Profileコンポーネントのルートを追加 */}
+              <Route path="/detail/:id" element={<ReviewDetail />} /> {/* 新しいルートを追加 */}
             </Routes>
           </div>
         </div>

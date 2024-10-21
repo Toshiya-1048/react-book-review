@@ -7,7 +7,7 @@ function Header() {
   const navigate = useNavigate(); // useNavigateフックを使用
   const { isLoggedIn, userName, iconUrl, logout } = useContext(AuthContext);
 
-  console.log('ユーザー名:', userName); // ここでユーザー名を確認
+  // console.log('ユーザー名:', userName); // ここでユーザー名を確認
 
   // station08
   const handleLogout = () => {

@@ -10,13 +10,11 @@ interface ProfileFormData {
 }
 
 function Profile() {
-  const { register, handleSubmit, formState: { errors }, watch, setError, clearErrors, setValue } = useForm<ProfileFormData>();
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<ProfileFormData>();
   const navigate = useNavigate();
   const { isLoggedIn, updateUserName } = useContext(AuthContext);
   const [iconUrl, setIconUrl] = useState<string>('');
   const [submissionError, setSubmissionError] = useState<string>('');
-
-  const selectedFile = watch('icon');
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -25,6 +23,7 @@ function Profile() {
     }
   }, [navigate, isLoggedIn]);
 
+  // 現在のユーザー情報を取得し、フォームに表示
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem('authToken');
@@ -43,8 +42,8 @@ function Profile() {
         });
 
         if (response.ok) {
-          const data: { name: string; iconUrl?: string } = await response.json();
-          console.log('取得したユーザーデータ:', data); // data.name が正しいか確認
+          const data: { name: string; iconUrl: string } = await response.json();
+          // console.log('取得したユーザーデータ:', data); // data.name が正しいか確認
           setValue('name', data.name);
           setIconUrl(data.iconUrl || '');
         } else {
@@ -59,11 +58,13 @@ function Profile() {
     };
 
     fetchUserData();
-  }, [navigate, setValue]); // 'setValue'を依存配列に追加
+  }, [navigate, setValue]);
 
+  // アイコンのバリデーション
   const validateImageFile = (fileList: FileList) => {
+    if (!fileList || fileList.length === 0) return true; // アイコンが選択されていない場合はバリデーション成功扱い
+
     const file = fileList[0];
-    if (!file) return 'アイコンを選択してください';
 
     // ファイルサイズの制限（1MB以下）
     if (file.size > 1024 * 1024) {
@@ -79,26 +80,7 @@ function Profile() {
     return true; // バリデーション成功
   };
 
-  useEffect(() => {
-    if (selectedFile && selectedFile.length > 0) {
-      const file = selectedFile[0];
-      // ファイルサイズの制限（1MB以下）
-      if (file.size > 1024 * 1024) {
-        setError('icon', { type: 'manual', message: 'アイコンのファイルサイズは1MB以下である必要があります' });
-      } else {
-        clearErrors('icon');
-      }
-
-      // 拡張子のチェック
-      const validExtensions = ['image/jpeg', 'image/png'];
-      if (!validExtensions.includes(file.type)) {
-        setError('icon', { type: 'manual', message: '許可されているファイル形式はjpgまたはpngのみです' });
-      } else {
-        clearErrors('icon');
-      }
-    }
-  }, [selectedFile, setError, clearErrors]);
-
+  // フォームの送信
   const onSubmit: SubmitHandler<ProfileFormData> = async (data) => {
     setSubmissionError('');
     const { name, icon } = data;
@@ -109,6 +91,7 @@ function Profile() {
     }
 
     const updateData = { name };
+    console.log('updateData:', updateData);
 
     try {
       // ユーザー名の更新
@@ -122,12 +105,11 @@ function Profile() {
       });
 
       if (response.ok) {
-        const responseData: { name: string; iconUrl?: string } = await response.json();
-        // setName(responseData.name);
-        setIconUrl(responseData.iconUrl !== undefined ? responseData.iconUrl : iconUrl);
-        updateUserName(responseData.name, responseData.iconUrl || iconUrl);
+        const responseData: { name: string; iconUrl: string } = await response.json();
+        // localStorageにユーザー名とアイコンURLを保存
+        updateUserName(responseData.name, iconUrl);
 
-        // アイコンのアップロード
+        // アイコンが選択されている場合のみアップロード
         if (icon && icon.length > 0) {
           const formData = new FormData();
           formData.append('icon', icon[0]);
@@ -181,7 +163,7 @@ function Profile() {
         </div>
         {iconUrl && (
           <div>
-            <label htmlFor="current-icon">現在のアイコン</label>
+            <label>現在のアイコン</label>
             <img id="current-icon" src={iconUrl} alt="ユーザーアイコン" className="w-20 h-20" />
           </div>
         )}
