@@ -1,9 +1,10 @@
 // ユーザー登録画面コンポーネント
 import React, { useState, useContext, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import Compressor from 'compressorjs';
+import { apiFetch } from '../utils/api'; // apiFetchをインポート
 
 interface SignUpFormData {
   name: string;
@@ -36,14 +37,13 @@ const SignUp: React.FC = () => {
     return true; // バリデーション成功
   };
 
-  const onSubmit = async (data: SignUpFormData) => {
-    // console.log('フォームデータ:', data);
+  const onSubmit: SubmitHandler<SignUpFormData> = async (data) => {
+    setError('');
     const { name, email, password } = data;
     const iconFile = data.icon[0];
-
+    
     try {
-      // ユーザー登録
-      const userResponse = await fetch('https://railway.bookreview.techtrain.dev/users', {
+      const userResponse: { token: string } = await apiFetch('/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,58 +51,37 @@ const SignUp: React.FC = () => {
         body: JSON.stringify({ name, email, password }),
       });
 
-      // console.log('ユーザー登録レスポンスステータス:', userResponse.status);
+      new Compressor(iconFile, {
+        quality: 0.6,
+        success: async (compressedResult) => {
+          const formData = new FormData();
+          formData.append('icon', compressedResult);
 
-      if (userResponse.ok) {
-        const userData: { token: string } = await userResponse.json();
-        // console.log('ユーザー登録レスポンスデータ:', userData);
-
-        // アイコンの圧縮
-        new Compressor(iconFile, {
-          quality: 0.6, // 圧縮品質を設定（0から1の範囲）
-          success: async (compressedResult) => {
-            // アイコンアップロード
-            const formData = new FormData();
-            formData.append('icon', compressedResult);
-
-            const iconResponse = await fetch('https://railway.bookreview.techtrain.dev/uploads', {
+          try {
+            const iconResponse: { iconUrl: string } = await apiFetch('/uploads', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${userData.token}`,
+                'Authorization': `Bearer ${userResponse.token}`,
               },
               body: formData,
             });
 
-            // console.log('アイコンアップロードレスポンスステータス:', iconResponse.status);
-
-            if (iconResponse.ok) {
-              const iconData: { iconUrl: string } = await iconResponse.json();
-                // console.log('アイコンアップロードレスポンスデータ:', iconData);
-
-              // AuthContextのlogin関数を呼び出す 
-              login(userData.token, name, iconData.iconUrl);
-
-              alert('サインアップに成功しました！');
-              navigate('/reviews');
-            } else {
-              const errorData = await iconResponse.json();
-              setError(errorData.ErrorMessageJP || 'アイコンのアップロードに失敗しました');
-              console.error('アイコンアップロードエラー:', errorData);
-            }
-          },
-          error(err) {
-            console.error('圧縮エラー:', err.message);
-            setError('アイコンの圧縮に失敗しました');
-          },
-        });
-      } else {
-        const errorData = await userResponse.json();
-        setError(errorData.ErrorMessageJP || '登録に失敗しました');
-        console.error('サインアップエラー:', errorData);
-      }
-    } catch (error) {
-      console.error('ネットワークエラー:', error);
-      setError('ネットワークエラーが発生しました');
+            login(userResponse.token, name, iconResponse.iconUrl);
+            alert('サインアップに成功しました！');
+            navigate('/reviews');
+          } catch (iconErr) {
+            setError((iconErr as Error).message || 'アイコンのアップロードに失敗しました');
+            console.error('アイコンアップロードエラー:', iconErr);
+          }
+        },
+        error(err) {
+          console.error('圧縮エラー:', err.message);
+          setError('アイコンの圧縮に失敗しました');
+        },
+      });
+    } catch (err) {
+      setError((err as Error).message || 'ネットワークエラーが発生しました。');
+      console.error('サインアップエラー:', err);
     }
   };
 
