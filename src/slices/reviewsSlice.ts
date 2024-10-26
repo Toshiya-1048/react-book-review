@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import { ReviewType } from '../types';
+import { apiFetch } from '../utils/api';
 
 interface ReviewsState {
   reviews: ReviewType[];
@@ -31,29 +32,22 @@ export const fetchReviews = createAsyncThunk<
   async ({ page, isLoggedIn }: { page: number; isLoggedIn: boolean }, thunkAPI) => {
     const offset = (page - 1) * 10;
     const endpoint = isLoggedIn 
-      ? `https://railway.bookreview.techtrain.dev/books?offset=${offset}`
-      : `https://railway.bookreview.techtrain.dev/public/books?offset=${offset}`;
+      ? `/books?offset=${offset}`
+      : `/public/books?offset=${offset}`;
     
     const headers: HeadersInit = isLoggedIn
       ? { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
       : {};
 
     try {
-      const response = await fetch(endpoint, {
+      const data: ReviewType[] = await apiFetch(endpoint, {
         method: 'GET',
         headers,
       });
-
-      if (response.ok) {
-        const data: ReviewType[] = await response.json();
-        const hasNextPage = data.length === 10;
-        return { reviews: data, hasNextPage };
-      } else {
-        const errorData = await response.json();
-        return thunkAPI.rejectWithValue(errorData.ErrorMessageJP || 'レビューの取得に失敗しました');
-      }
-    } catch {
-      return thunkAPI.rejectWithValue('ネットワークエラーが発生しました');
+      const hasNextPage = data.length === 10;
+      return { reviews: data, hasNextPage };
+    } catch (err) {
+      return thunkAPI.rejectWithValue((err as Error).message || 'レビューの取得に失敗しました。');
     }
   }
 );

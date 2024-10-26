@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch, ErrorResponse } from '../utils/api'; // ErrorResponseをインポート
 
 interface LoginFormData {
   email: string;
@@ -23,10 +24,8 @@ const Login: React.FC = () => {
       password: data.password,
     };
 
-    // console.log('送信データ:', signinData); // 送信データをコンソールに出力
-
     try {
-      const response = await fetch('https://railway.bookreview.techtrain.dev/signin', {
+      const responseData: { token: string } | ErrorResponse = await apiFetch('/signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,14 +33,14 @@ const Login: React.FC = () => {
         body: JSON.stringify(signinData),
       });
 
-      // console.log('レスポンスステータス:', response.status); // レスポンスステータスをコンソールに出力
+      if ('ErrorCode' in responseData) {
+        throw new Error(responseData.ErrorMessageJP);
+      }
 
-      if (response.ok) {
-        const responseData: { token: string } = await response.json();
-        // console.log('レスポンスデータ:', responseData); // レスポンスデータをコンソールに出力
-
+      // ここでresponseDataがErrorResponseでないことを確認するために型ガードを追加
+      if ('token' in responseData) {
         // ユーザー名を取得するAPIを呼び出す
-        const userResponse = await fetch('https://railway.bookreview.techtrain.dev/users', {
+        const userData = await apiFetch<{ name: string; iconUrl: string }>('/users', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -49,42 +48,14 @@ const Login: React.FC = () => {
           },
         });
 
-        if (userResponse.ok) {
-          const userData: { name: string; iconUrl: string } = await userResponse.json();
-          // console.log('ユーザーデータ:', userData);
+        login(responseData.token, userData.name, userData.iconUrl || '');
 
-          // AuthContextのlogin関数を呼び出す
-          login(responseData.token, userData.name, userData.iconUrl || '');
-
-          // レビュー一覧にリダイレクト
-          navigate('/reviews');
-        } else {
-          const errorData = await userResponse.json();
-          setError(errorData.ErrorMessageJP || 'ユーザー情報の取得に失敗しました');
-          console.error('ユーザー情報取得エラー:', errorData);
-        }
-      } else {
-        const errorData = await response.json();
-        switch (response.status) {
-          case 400:
-            setError(errorData.ErrorMessageJP || 'リクエストが正しくありません');
-            break;
-          case 401:
-            setError(errorData.ErrorMessageJP || '認証に失敗しました');
-            break;
-          case 500:
-            setError(errorData.ErrorMessageJP || 'サーバーエラーが発生しました');
-            break;
-          case 503:
-            setError(errorData.ErrorMessageJP || 'サービスが利用できません');
-            break;
-          default:
-            setError('ログインに失敗しました');
-        }
-        console.error('サーバーエラー:', errorData);
+        // レビュー一覧にリダイレクト
+        navigate('/reviews');
       }
     } catch (err) {
-      setError('ネットワークエラーが発生しました');
+      const errorMessage = err instanceof Error ? err.message : 'ログインに失敗しました'; // エラーメッセージを確認
+      setError(errorMessage);
       console.error('ログインエラー:', err);
     }
   };
@@ -112,7 +83,7 @@ const Login: React.FC = () => {
               required: 'メールアドレスは必須です',
               pattern: {
                 value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                message: '有効なメールアドレスを入力してください'
+                message: '有効なメ��ルアドレスを入力してください'
               }
             })}
             autoComplete="email"

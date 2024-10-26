@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 interface BookDetail {
   id: string;
@@ -30,24 +31,17 @@ const ReviewDetail: React.FC = () => {
       const token = localStorage.getItem('authToken');
 
       try {
-        const response = await fetch(`https://railway.bookreview.techtrain.dev/books/${id}`, {
+        const data: BookDetail = await apiFetch(`/books/${id}`, {
           method: 'GET',
           headers: {
             'Authorization': token ? `Bearer ${token}` : '',
           },
         });
 
-        if (response.ok) {
-          const data: BookDetail = await response.json();
-          setBookDetail(data);
-        } else if (response.status === 401) {
-          // 認証エラー
-          setError('このページを閲覧するにはログインが必要です。');
-        } else {
-          setError('書籍情報の取得に失敗しました。');
-        }
-      } catch {
-        setError('ネットワークエラーが発生しました。');
+        setBookDetail(data);
+      } catch (err) {
+        setError((err as Error).message || '予期しないエラーが発生しました。');
+        console.error('レビュー取得エラー:', err);
       } finally {
         setLoading(false);
       }
@@ -90,7 +84,7 @@ const ReviewDetail: React.FC = () => {
               rel="noopener noreferrer"
               className="text-blue-500 hover:underline"
             >
-              {bookDetail.url}
+              {bookDetail.url.length > 30 ? `${bookDetail.url.slice(0, 30)}...` : bookDetail.url}
             </a>
           </div>
           <div className="mb-4">

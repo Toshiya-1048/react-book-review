@@ -1,34 +1,44 @@
-import { useEffect } from 'react';
+import { useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ReviewPagination from './ReviewPagination';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { fetchReviews } from '../slices/reviewsSlice';
 import { ReviewType } from '../types';
-import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { apiFetch } from '../utils/api'; // apiFetchをインポート
 
 function ReviewList() {
   const dispatch = useDispatch<AppDispatch>();
   const { isLoggedIn } = useContext(AuthContext);
-  const { reviews, currentPage, hasNextPage, loading, error } = useSelector((state: RootState) => state.reviews as {
-    reviews: ReviewType[];
-    currentPage: number;
-    hasNextPage: boolean;
-    loading: boolean;
-    error: string | null;
-  });
+  const { reviews, currentPage, hasNextPage, loading, error } = useSelector((state: RootState) => state.reviews);
   const navigate = useNavigate();
 
   useEffect(() => {
-    dispatch(fetchReviews({ page: currentPage, isLoggedIn }));
+    const fetchReviewsData = async () => {
+      try {
+        const actionResult = await dispatch(fetchReviews({ page: currentPage, isLoggedIn }));
+        unwrapResult(actionResult);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          // エラーメッセージはreduxのstateから取得するため、ここではログのみ
+          console.error('レビュー取得エラー:', err.message);
+        } else {
+          console.error('レビュー取得エラー:', err);
+        }
+        // エラーメッセージはreduxのstate.errorに格納されているため、setErrorは不要
+      }
+    };
+
+    fetchReviewsData();
   }, [dispatch, currentPage, isLoggedIn]);
 
   const handleReviewClick = async (reviewId: string) => {
     const token = localStorage.getItem('authToken');
     if (token) {
       try {
-        await fetch('https://railway.bookreview.techtrain.dev/logs', {
+        await apiFetch('/logs', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -37,8 +47,12 @@ function ReviewList() {
           body: JSON.stringify({ selectBookId: reviewId }),
         });
         console.log('selected book id:', reviewId);
-      } catch (err) {
-        console.error('ログ送信エラー:', err);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error('ログ送信エラー:', err.message || '予期しないエラーが発生しました。');
+        } else {
+          console.error('ログ送信エラー:', '予期しないエラーが発生しました。');
+        }
       }
     } else {
       // 未認証の場合はログ送信をスキップ

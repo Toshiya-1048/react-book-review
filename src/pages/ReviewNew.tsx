@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api'; // apiFetchをインポート
 
 interface ReviewFormData {
   title: string;
@@ -23,7 +24,7 @@ const ReviewNew: React.FC = () => {
     }
 
     try {
-      const response = await fetch('https://railway.bookreview.techtrain.dev/books', {
+      await apiFetch('/books', { // API_BASE_URLを使用
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,16 +33,10 @@ const ReviewNew: React.FC = () => {
         body: JSON.stringify(data),
       });
 
-      if (response.ok) {
-        alert('レビューが投稿されました');
-        navigate('/reviews'); // 投稿後にレビュー一覧にリダイレクト
-      } else {
-        const errorData = await response.json();
-        setSubmissionError(errorData.ErrorMessageJP || 'レビューの投稿に失敗しました');
-        console.error('レビュー投稿エラー:', errorData);
-      }
+      alert('レビューが投稿されました');
+      navigate('/reviews');
     } catch (err) {
-      setSubmissionError('ネットワークエラーが発生しました');
+      setSubmissionError((err as Error).message || 'ネットワークエラーが発生しました。');
       console.error('レビュー投稿エラー:', err);
     }
   };
