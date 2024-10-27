@@ -6,7 +6,8 @@
       "@tailwind",
       "reduxjs",
       "compressorjs",
-      "signup"
+      "signup",
+      "tanstack"
     ],
     "ignorePaths": [
       "**/node_modules/**",

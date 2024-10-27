@@ -1,11 +1,7 @@
 import { useDispatch } from 'react-redux';
 import { setCurrentPage } from '../slices/reviewsSlice';
 import { AppDispatch } from '../store';
-
-interface ReviewPaginationProps {
-  currentPage: number;
-  hasNextPage: boolean;
-}
+import { ReviewPaginationProps } from '../types';
 
 function ReviewPagination({ currentPage, hasNextPage }: ReviewPaginationProps) {
   const dispatch = useDispatch<AppDispatch>();
