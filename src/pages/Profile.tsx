@@ -1,149 +1,122 @@
 // ユーザー情報編集画面コンポーネント
-import { useEffect, useContext, useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
 import { useForm, SubmitHandler } from 'react-hook-form';
-
-interface ProfileFormData {
-  name: string;
-  icon: FileList;
-}
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiFetch } from '../utils/api';
+import { AuthContext } from '../context/AuthContext';
+import { ProfileFormData, UserData } from '../types';
 
 function Profile() {
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<ProfileFormData>();
   const navigate = useNavigate();
-  const { isLoggedIn, updateUserName } = useContext(AuthContext);
-  const [iconUrl, setIconUrl] = useState<string>('');
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<ProfileFormData>();
   const [submissionError, setSubmissionError] = useState<string>('');
+  const [iconUrl, setIconUrl] = useState<string>('');
 
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (!token || !isLoggedIn) {
-      navigate('/login');
-    }
-  }, [navigate, isLoggedIn]);
+  const { updateUserName } = useContext(AuthContext);
 
-  // 現在のユーザー情報を取得し、フォームに表示
-  useEffect(() => {
-    const fetchUserData = async () => {
+  const { isLoading } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: async () => {
       const token = localStorage.getItem('authToken');
       if (!token) {
         navigate('/login');
-        return;
+        return null;
       }
 
-      try {
-        const response = await fetch('https://railway.bookreview.techtrain.dev/users', {
-          method: 'GET',
+      const data = await apiFetch<UserData>('/users', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (data) {
+        setValue('name', data.name);
+        setIconUrl(data.iconUrl || '');
+      }
+      return data;
+    }
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: ProfileFormData) => {
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error('認証エラー');
+
+      const { name, icon } = data;
+      const updateData = { name };
+
+      // ユーザー名の更新
+      const userData = await apiFetch<UserData>('/users', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      // アイコンが選択されている場合のみアップロード
+      if (icon && icon.length > 0) {
+        const formData = new FormData();
+        formData.append('icon', icon[0]);
+
+        const iconData = await apiFetch<{ iconUrl: string }>('/uploads', {
+          method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
+          body: formData,
         });
 
-        if (response.ok) {
-          const data: { name: string; iconUrl: string } = await response.json();
-          // console.log('取得したユーザーデータ:', data); // data.name が正しいか確認
-          setValue('name', data.name);
-          setIconUrl(data.iconUrl || '');
-        } else {
-          const errorData = await response.json();
-          setSubmissionError(errorData.ErrorMessageJP || 'ユーザー情報の取得に失敗しました');
-          console.error('ユーザー情報取得エラー:', errorData);
-        }
-      } catch (err) {
-        setSubmissionError('ネットワークエラーが発生しました');
-        console.error('ユーザー情報取得エラー:', err);
+        // アイコンURLを更新
+        setIconUrl(iconData.iconUrl); // ここでアイコンURLを更新
+        return { ...userData, iconUrl: iconData.iconUrl };
       }
-    };
 
-    fetchUserData();
-  }, [navigate, setValue]);
+      return userData;
+    },
+    onSuccess: (data) => {
+      // data.iconUrl が存在する場合のみ更新
+      if (data.iconUrl) {
+        setIconUrl(data.iconUrl);
+        updateUserName(data.name, data.iconUrl);
+      } else {
+        updateUserName(data.name, iconUrl); // 既存のiconUrlを保持
+      }
+      alert('プロフィールが更新されました');
+    },
+    onError: (error: Error) => {
+      setSubmissionError(error.message || 'プロフィールの更新に失敗しました');
+    }
+  });
 
   // アイコンのバリデーション
   const validateImageFile = (fileList: FileList) => {
-    if (!fileList || fileList.length === 0) return true; // アイコンが選択されていない場合はバリデーション成功扱い
+    if (!fileList || fileList.length === 0) return true;
 
     const file = fileList[0];
 
-    // ファイルサイズの制限（1MB以下）
     if (file.size > 1024 * 1024) {
       return 'アイコンのファイルサイズは1MB以下である必要があります';
     }
 
-    // 拡張子のチェック
     const validExtensions = ['image/jpeg', 'image/png'];
     if (!validExtensions.includes(file.type)) {
       return '許可されているファイル形式はjpgまたはpngのみです';
     }
 
-    return true; // バリデーション成功
+    return true;
   };
 
-  // フォームの送信
-  const onSubmit: SubmitHandler<ProfileFormData> = async (data) => {
-    setSubmissionError('');
-    const { name, icon } = data;
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    const updateData = { name };
-    console.log('updateData:', updateData);
-
-    try {
-      // ユーザー名の更新
-      const response = await fetch('https://railway.bookreview.techtrain.dev/users', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (response.ok) {
-        const responseData: { name: string; iconUrl: string } = await response.json();
-        // localStorageにユーザー名とアイコンURLを保存
-        updateUserName(responseData.name, iconUrl);
-
-        // アイコンが選択されている場合のみアップロード
-        if (icon && icon.length > 0) {
-          const formData = new FormData();
-          formData.append('icon', icon[0]);
-
-          const iconResponse = await fetch('https://railway.bookreview.techtrain.dev/uploads', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-            body: formData,
-          });
-
-          if (iconResponse.ok) {
-            const iconData: { iconUrl: string } = await iconResponse.json();
-            setIconUrl(iconData.iconUrl);
-            updateUserName(responseData.name, iconData.iconUrl); // アイコンURLを更新
-          } else {
-            const errorData = await iconResponse.json();
-            setSubmissionError(errorData.ErrorMessageJP || 'アイコンのアップロードに失敗しました');
-            console.error('アイコンアップロードエラー:', errorData);
-          }
-        }
-
-        alert('プロフィールが更新されました');
-      } else {
-        const errorData = await response.json();
-        setSubmissionError(errorData.ErrorMessageJP || 'プロフィールの更新に失敗しました');
-        console.error('プロフィール更新エラー:', errorData);
-      }
-    } catch (err) {
-      setSubmissionError('ネットワークエラーが発生しました');
-      console.error('プロフィール更新エラー:', err);
-    }
+  const onSubmit: SubmitHandler<ProfileFormData> = (data) => {
+    updateProfileMutation.mutate(data);
   };
+
+  if (isLoading) {
+    return <div className="text-center">読み込み中...</div>;
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -157,16 +130,14 @@ function Profile() {
             type="text"
             className={`border w-full p-2 ${errors.name ? 'border-red-500' : ''}`}
             {...register('name', { required: '名前は必須です' })}
-            autoComplete="name" // 自動入力属性を追加
+            autoComplete="name"
           />
           {errors.name && <p className="text-red-500">{errors.name.message}</p>}
         </div>
-        {iconUrl && (
           <div>
             <label>現在のアイコン</label>
             <img id="current-icon" src={iconUrl} alt="ユーザーアイコン" className="w-20 h-20" />
           </div>
-        )}
         <div>
           <label htmlFor="icon-upload">アイコンを変更</label>
           <input
@@ -178,8 +149,12 @@ function Profile() {
           />
           {errors.icon && <p className="text-red-500">{errors.icon.message}</p>}
         </div>
-        <button type="submit" className="bg-blue-500 text-white py-2 px-4">
-          更新
+        <button 
+          type="submit" 
+          className="bg-blue-500 text-white py-2 px-4"
+          disabled={updateProfileMutation.isPending}
+        >
+          {updateProfileMutation.isPending ? '更新中...' : '更新'}
         </button>
       </form>
     </div>

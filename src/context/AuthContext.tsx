@@ -1,13 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-
-interface AuthContextType {
-  isLoggedIn: boolean;
-  userName: string;
-  iconUrl: string;
-  login: (token: string, name: string, icon: string) => void;
-  logout: () => void;
-  updateUserName: (name: string, icon: string) => void;
-}
+import { AuthContextType } from '../types';
 
 export const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,

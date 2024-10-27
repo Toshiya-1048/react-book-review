@@ -3,12 +3,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { AuthContext } from '../context/AuthContext';
-import { apiFetch, ErrorResponse } from '../utils/api'; // ErrorResponseをインポート
-
-interface LoginFormData {
-  email: string;
-  password: string;
-}
+import { apiFetch } from '../utils/api';
+import { LoginFormData, ErrorResponse } from '../types';
 
 const Login: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();

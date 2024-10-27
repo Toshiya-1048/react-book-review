@@ -1,10 +1,6 @@
-const API_BASE_URL = 'https://railway.bookreview.techtrain.dev';
+import { ErrorResponse } from '../types';
 
-export interface ErrorResponse {
-  ErrorCode: number;
-  ErrorMessageJP: string;
-  ErrorMessageEN: string;
-}
+const API_BASE_URL = 'https://railway.bookreview.techtrain.dev';
 
 export const apiFetch = async <T>(
   endpoint: string,
@@ -28,3 +24,4 @@ export const apiFetch = async <T>(
     }
   }
 };
+

@@ -2,22 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
-
-interface ReviewFormData {
-  title: string;
-  url: string;
-  detail: string;
-  review: string;
-}
-
-interface BookDetail {
-  id: string;
-  title: string;
-  url: string;
-  detail: string;
-  review: string;
-  isMine: boolean;
-}
+import { ReviewFormData, BookDetail } from '../types';
 
 const ReviewEdit: React.FC = () => {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ReviewFormData>();

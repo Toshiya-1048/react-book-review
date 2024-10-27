@@ -5,13 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import Compressor from 'compressorjs';
 import { apiFetch } from '../utils/api'; // apiFetchをインポート
-
-interface SignUpFormData {
-  name: string;
-  email: string;
-  password: string;
-  icon: FileList;
-}
+import { SignUpFormData } from '../types';
 
 const SignUp: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<SignUpFormData>();
